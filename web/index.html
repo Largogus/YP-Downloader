@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+    <title>Скачать видео из Youtube и Pinterest</title>
+    <link rel="icon" type="image/png" href="logo.png">
+</head>
+<body>
+
+    <div class="card" id="name"><p id="text">Скачать видео из Youtube и Pinterest</p></div>
+    <br>
+    <main class="content">
+        <input type="url" id="inp_url" class="inp" placeholder="Вставьте ссылку из Youtube или Pinterest">
+        <button id='dwn' class="btn">Скачать</button>
+
+        <div class="combo">
+            <div class="combo-selected">
+                <span id="formatText">MP4 1080p</span>
+                <div class="combo-arrow">⌄</div>
+            </div>
+            <div class="combo-list">
+                <div class="combo-item active">MP4 1080p</div>
+                <div class="combo-item">MP4 720p</div>
+                <div class="combo-item">MP4 480p</div>
+                <div class="combo-item">MP4 360p</div>
+                <div class="combo-item">MP4 240p</div>
+                <div class="combo-item">MP4 144p</div>
+            </div>
+        </div>
+        <a id="sidetext" href="https://t.me/m/9zGeihYdYWJi">Нужна помощь?</a>
+
+        <div class="progress-wrapper">
+            <div class="progress-bar" id="progress">
+                <span id="progressText">0%</span>
+            </div>
+        </div>
+
+        <div class="modal" id="modal">
+            <div class="modal-card">
+                <div class="modal-title">Скачивание началось</div>
+
+                <div class="loader">
+                    <div class="loader-bar"></div>
+                </div>
+
+                <div class="modal-footer">
+                    <a href="https://t.me/LargenEXE" target="_blank">
+                        📢 Больше проектов в Telegram
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="text/javascript" src="/eel.js"></script>
+    <script src="code.js"></script>
+</body>
+</html>
