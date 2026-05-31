@@ -4,6 +4,8 @@ from urllib.parse import urlparse
 import eel
 import yt_dlp as y
 
+from get_ffmpeg import get_ffmpeg_path
+from get_proxy import get_proxy
 
 eel.init("web")
 
@@ -21,50 +23,88 @@ def is_url(url):
 
 
 @eel.expose
+def prepare_download(url, quality):
+    try:
+        if not is_url(url):
+            return {"success": False, "error": "invalid_url"}
+
+        if not quality:
+            return {"success": False, "error": "invalid_quality"}
+
+        if not any(x in url for x in ['youtube', 'youtu', 'pinterest', 'pin']):
+            return {"success": False, "error": "invalid_url"}
+
+        return {"success": True}
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@eel.expose
 def download_video(url, quality: str):
     try:
-        state_url = is_url(url)
-        eel.error_url(state_url)
-
-        if not state_url:
-            return
-
-        eel.showModal()
-
         downloads = str(Path.home() / "Downloads")
+        ffmpeg = get_ffmpeg_path()
         height = int(re.search(r'\d+', quality).group())
+        proxy = get_proxy()
 
-        ydl_opts = {
-            "outtmpl": f'{downloads}/%(title)s.%(ext)s',
-            "format": f"bestvideo[height<={height}]+bestaudio/best[ext=m4a]/best",
-            'noplaylist': True,
-            'quiet': False,
-            'geo_bypass': True,
-            "retries": 10,
-            "fragment_retries": 10,
-            "http_headers": {
-                "User-Agent": "Mozilla/5.0"
-            },
-            "merge_output_format": "mp4",
-            "ffmpeg_location": "ffmpeg/bin",
-            "postprocessors": [{
-                "key": "FFmpegVideoConvertor",
-                "preferedformat": "mp4"
-            }],
-            "nopart": False,
-            "overwrites": False,
-            "proxy": "http://144.79.35.11:3125",
-            # "progress_hooks": [progress_hook],
-        }
+        opts = None
 
-        with y.YoutubeDL(ydl_opts) as ydl:
+        if any(x in url for x in ['youtube', 'youtu']):
+
+            opts = {
+                "outtmpl": f'{downloads}/%(title)s.%(ext)s',
+                "format": f"bv*[height<={height}]+ba[ext=m4a]/bv*+ba[ext=m4a]/bv*+ba",
+                'noplaylist': True,
+                'quiet': False,
+                'geo_bypass': True,
+                "retries": 10,
+                "fragment_retries": 10,
+                "http_headers": {
+                    "User-Agent": "Mozilla/5.0"
+                },
+                "merge_output_format": "mp4",
+                "ffmpeg_location": ffmpeg,
+                "postprocessors": [
+                    {
+                        "key": "FFmpegVideoConvertor",
+                        "preferedformat": "mp4"
+                    }
+                ],
+                "postprocessor_args": [
+                    "-c:v", "copy",
+                    "-c:a", "aac",
+                    "-b:a", "192k",
+                    "-movflags", "+faststart"
+                ],
+                "nopart": False,
+                "overwrites": False,
+                "proxy": proxy,
+                # "progress_hooks": [progress_hook],
+            }
+
+        elif any(x in url for x in ['pinterest', 'pin']):
+            opts = {
+                "outtmpl": f'{downloads}/%(title)s.%(ext)s',
+                "noplaylist": True,
+                "merge_output_format": "mp4",
+                "retries": 10,
+                "fragment_retries": 10,
+                "http_headers": {
+                    "User-Agent": "Mozilla/5.0"
+                },
+                "quiet": False,
+                "ffmpeg_location": ffmpeg,
+            }
+
+        if opts is None:
+            return {"success": False, "error": "invalid url"}
+
+        with y.YoutubeDL(opts) as ydl:
             ydl.download([url])
-
-        eel.hideModal()
 
         return {"success": True}
     except Exception as e:
-        eel.showError()
         return {"success": False, "error": str(e)}
 
 

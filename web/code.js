@@ -24,49 +24,79 @@ items.forEach(item => {
     };
 });
 
-const modal = document.getElementById("modal");
 
-eel.expose(showModal);
+const modal = document.querySelector(".modal");
+
 
 function showModal() {
     modal.classList.add("show");
+    title.textContent = "Скачивание началось";
+    loaderBar.style.display = "block";
 }
 
-eel.expose(hideModal);
 
 function hideModal() {
     modal.classList.remove("show");
 }
 
-eel.expose(showError);
+const title = document.querySelector(".modal-title");
+const loaderBar = document.querySelector(".loader-bar");
+
 
 function showError(errorText = "Что-то пошло не так") {
     title.textContent = "Произошла ошибка";
-    subtitle.textContent = errorText;
+    console.error(`Ошибка: ${errorText}`)
 
     modal.classList.add("show");
 
-    document.querySelector(".loader-bar").style.display = "none";
+    loaderBar.style.display = "none";
 
     setTimeout(() => {
         modal.classList.remove("show");
-        document.querySelector(".loader-bar").style.display = "block";
-    }, 2500);
+        loaderBar.style.display = "block";
+    }, 10000);
 }
 
 
 const btn = document.getElementById("dwn");
 
 btn.addEventListener("click", () => {
-    let inp = document.getElementById("inp_url");
-    let info = inp.value
-    let format = document.getElementById("formatText").textContent;
-    eel.download_video(info, format)
-    console.log(info, format)
-})
+    const inp = document.getElementById("inp_url");
+    const url = inp.value;
 
+    const formatText = document.getElementById("formatText");
+    const quality = formatText.textContent;
 
-eel.expose(error_url);
+    console.log(url, quality);
+
+    eel.prepare_download(url, quality)(function(res) {
+
+        if (!res.success) {
+            error_url();
+            return;
+        }
+
+        showModal();
+
+        eel.download_video(url, quality)(function(result) {
+
+            if (result) {
+                title.textContent = "Видео успешно скачано!";
+                loaderBar.style.display = "none";
+
+                setTimeout(() => {
+                    hideModal();
+                }, 10000);
+            }
+
+            if (!result.success) {
+                showError(result.error || "Ошибка загрузки");
+                return;
+            }
+        });
+    });
+});
+
 
 function error_url(state) {
     let inp = document.getElementById("inp_url");
