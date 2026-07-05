@@ -133,16 +133,16 @@ body {
 
 #rept {
     flex: 1;
-    --accent: #00ca6c;
-    background: linear-gradient(135deg, var(--accent), #02be70);
+    --accent: #6d6d6d;
+    background: linear-gradient(135deg, #9c9c9c, var(--accent));
 }
 
 #rept:hover {
-    box-shadow: 0 0 35px rgba(117, 255, 37, 0.32);
+    box-shadow: 0 0 35px rgba(66, 66, 66, 0.32);
 }
 
 #rept:active {
-    box-shadow: 0 0 20px rgba(0, 104, 14, 0.2);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
 }
 
 .inp {
@@ -206,6 +206,20 @@ body {
     display: flex;
 }
 
+.settings {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+}
+
+.settings.show {
+    display: flex;
+}
+
 .modal-card {
     width: 320px;
     padding: 24px;
@@ -219,6 +233,12 @@ body {
 }
 
 .modal-title {
+    color: #f2f5f7;
+    font-size: 16px;
+    margin-bottom: 16px;
+}
+
+.settings-title {
     color: #f2f5f7;
     font-size: 16px;
     margin-bottom: 16px;

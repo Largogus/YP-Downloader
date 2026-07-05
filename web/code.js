@@ -4,9 +4,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 const combo = document.querySelector(".combo");
-const selected = document.querySelector(".combo-selected");
-const items = document.querySelectorAll(".combo-item");
+const selected = combo.querySelector(".combo-selected");
+const items = combo.querySelectorAll(".combo-item");
 const text = document.getElementById("formatText");
+const text1 = document.getElementById("formatText1");
 
 selected.onclick = () => {
     combo.classList.toggle("open");
@@ -26,12 +27,24 @@ items.forEach(item => {
 
 
 const modal = document.querySelector(".modal");
+const settings = document.getElementById("settings");
 
 
 function showModal() {
     modal.classList.add("show");
     title.textContent = "Скачивание началось";
     loaderBar.style.display = "block";
+}
+
+
+function showSettings() {
+    settings.classList.add("show");
+    title.textContent = "Настройки";
+}
+
+
+function hideSettings() {
+    settings.classList.remove("show");
 }
 
 
@@ -64,6 +77,11 @@ function showError(errorText = "Что-то пошло не так") {
 
 
 const btn = document.getElementById("dwn");
+const sett_btn = document.getElementById("sett");
+
+sett_btn.addEventListener("click", () => {
+    showSettings();
+});
 
 btn.addEventListener("click", () => {
     const inp = document.getElementById("inp_url");
@@ -135,5 +153,24 @@ rept.addEventListener('click', function() {
 p.forEach(i => {
     i.onclick = () => {
         eel.open_tab(i.getAttribute("link"))
+    };
+});
+
+
+const settingsCombo = document.querySelector(".settings-combo");
+const settingsSelected = settingsCombo.querySelector(".combo-selected");
+const settingsItems = settingsCombo.querySelectorAll(".combo-item");
+const settingsText = document.getElementById("formatText2");
+
+settingsSelected.onclick = () => {
+    settingsCombo.classList.toggle("open");
+};
+
+settingsItems.forEach(item => {
+    item.onclick = () => {
+        settingsItems.forEach(i => i.classList.remove("active"));
+        item.classList.add("active");
+        settingsText.textContent = item.textContent;
+        settingsCombo.classList.remove("open");
     };
 });
