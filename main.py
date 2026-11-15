@@ -131,7 +131,7 @@ def open_downloads():
 
 
 def main():
-    kwargs = dict(disable_cache=True, size=(1000, 500))
+    kwargs = dict(disable_cache=True, size=(1000, 610))
     try:
         eel.start("index.html", **kwargs)
     except EnvironmentError:

@@ -1,5 +1,5 @@
 window.addEventListener('DOMContentLoaded', () => {
-    window.resizeTo(1000, 560);
+    window.resizeTo(1000, 610);
 });
 
 
