@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # **YP Downloader**
 
 <p align="center">
