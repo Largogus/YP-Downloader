@@ -94,10 +94,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
             error_url(res.success);
 
-            if (!res.success) {
-                return;
-            }
-
             showModal();
 
             eel.download_video(url, quality)(function(result) {
@@ -111,8 +107,9 @@ window.addEventListener('DOMContentLoaded', () => {
                     }, 10000);
                 }
 
-                if (!result.success) {
-                    showError(result.error || "Ошибка загрузки");
+                if (!res || !res.success) {
+                    error_url(false);
+                    showError(res?.error || "Ошибка проверки ссылки");
                     return;
                 }
             });

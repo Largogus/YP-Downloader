@@ -13,7 +13,16 @@ from proxy import get_proxy, proxy_alive
 eel.init("web")
 
 DOWNLOADS = Path.home() / "Downloads"
-QUALITY_MAP = {"8k": 4320, "4k": 2160, "2k": 1440}
+QUALITY_MAP = {
+    "8k": 4320,
+    "4k": 2160,
+    "2k": 1440,
+    "full hd": 1080,
+    "hd": 720,
+    "лучшее": 4320,
+    "best": 4320,
+    "максимальное": 4320,
+}
 
 deno = get_deno()
 
@@ -46,11 +55,16 @@ def _to_height(height: str):
     height = (height or "").strip().lower()
     if height in QUALITY_MAP:
         return QUALITY_MAP[height]
-    m = re.search(r"\d+", height)
-    if not m:
-        return None
-    n = int(m.group())
-    return n if n >= 144 else None
+
+    m = re.search(r"(\d{3,4})\s*p\b", height)
+    if m:
+        return int(m.group(1))
+
+    for key, h in QUALITY_MAP.items():
+        if re.search(rf"\b{re.escape(key)}\b", height):
+            return h
+
+    return None
 
 
 def fail(e):

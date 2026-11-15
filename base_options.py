@@ -9,7 +9,7 @@ def base_opts(downloads_path, ffmpeg):
         "socket_timeout": 15,
         "ffmpeg_location": ffmpeg,
         "quiet": False,
-        "verbose": False,
+        "verbose": True,
         "noprogress": True,
         "postprocessor_args": {"merger": ["-movflags", "+faststart"]},
     }
