@@ -1,3 +1,5 @@
+import requests
+
 errors = {
   "Connection aborted": ["E-1001", "Соединение было неожиданно разорвано."],
   "ConnectionResetError": ["E-1002", "Удалённый сервер закрыл соединение."],
@@ -54,10 +56,11 @@ errors = {
 
 
 def get_error(err: str):
-    # ERRORS = "https://raw.githubusercontent.com/Largogus/yt-downloader/refs/heads/master/errors.json"
-    # errors = requests.get(ERRORS).json()
+    ERRORS = "https://raw.githubusercontent.com/Largogus/yt-downloader/refs/heads/master/errors.json"
+    errors = requests.get(ERRORS).json()
 
     err_lower = err.lower()
+    print(err)
 
     for key, (code, desc) in errors.items():
         if key.lower() in err_lower:

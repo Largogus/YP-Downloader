@@ -1,129 +1,142 @@
-import webbrowser
+import os, sys, threading, webbrowser, re
 from pathlib import Path
-import re
 from urllib.parse import urlparse
 import eel
 import yt_dlp as y
+from base_options import base_opts
+from build_format import build_format
 from error import get_error
+from get_deno import get_deno
 from get_ffmpeg import get_ffmpeg_path
-from proxy import get_proxy
+from proxy import get_proxy, proxy_alive
 
 eel.init("web")
 
+DOWNLOADS = Path.home() / "Downloads"
+QUALITY_MAP = {"8k": 4320, "4k": 2160, "2k": 1440}
 
-def is_url(url):
-    parsed = urlparse(url)
-    return bool(parsed.scheme and parsed.netloc)
+deno = get_deno()
+
+_busy = threading.Lock()
+
+SITES = {
+    "youtube": ("youtube.com", "youtu.be", "youtube-nocookie.com"),
+    "pinterest": (
+        "pinterest.com", "pinterest.ru", "pinterest.co.uk",
+        "pinterest.de", "pinterest.fr", "pinterest.es",
+        "pinterest.it", "pin.it",
+    ),
+}
 
 
-# def progress_hook(d):
-#     if d['status'] == 'downloading':
-#         percent = d.get('_percent_str', '0%')
-#
-#         eel.update_progress(percent)
+def is_url(url: str) -> bool:
+    parsed = urlparse(url or "")
+    return parsed.scheme in ("http", "https") and bool(parsed.netloc)
+
+
+def get_site(url):
+    host = (urlparse(url or "").hostname or "").lower()
+    for site, domains in SITES.items():
+        if any(host == d or host.endswith("." + d) for d in domains):
+            return site
+    return None
+
+
+def _to_height(height: str):
+    height = (height or "").strip().lower()
+    if height in QUALITY_MAP:
+        return QUALITY_MAP[height]
+    m = re.search(r"\d+", height)
+    if not m:
+        return None
+    n = int(m.group())
+    return n if n >= 144 else None
+
+
+def fail(e):
+    code, desc = get_error(e)
+    return {"success": False, "error": f"{code} ({desc})"}
 
 
 @eel.expose
-def prepare_download(url, quality):
+def validate_download(url, quality):
     try:
+        url = (url or "").strip()
         if url == "test":
             return {"success": True}
-        if not is_url(url):
+        if not is_url(url) or not get_site(url):
             return {"success": False, "error": "E-7001 (Ссылка не поддерживается.)"}
-
-        if not quality:
+        if _to_height(quality) is None:
             return {"success": False, "error": "E-4002 (Не найдено доступных форматов.)"}
-
-        if not any(x in url for x in ['youtube', 'youtu', 'pinterest', 'pin']):
-            return {"success": False, "error": "E-7001 (Ссылка не поддерживается.)"}
-
         return {"success": True}
-
     except Exception as e:
-        code, desc = get_error(str(e))
-        return {"success": False, "error": f"{code} ({desc})"}
+        return fail(e)
 
 
 @eel.expose
 def download_video(url, quality: str):
+    if not _busy.acquire(blocking=False):
+        return {"success": False, "error": "Уже идёт другая загрузка."}
+
+    proxy = None
+
     try:
-        downloads = str(Path.home() / "Downloads")
-        ffmpeg = get_ffmpeg_path()
-        height = int(re.search(r'\d+', quality).group())
-        proxy = get_proxy()
+        url = (url or "").strip()
+        site = get_site(url) if is_url(url) else None
+        height = _to_height(quality)
 
-        opts = None
+        if not site:
+            return {"success": False, "error": "E-7001 (Ссылка не поддерживается.)"}
+        if height is None:
+            return {"success": False, "error": "E-4002 (Не найдено доступных форматов.)"}
 
-        if any(x in url for x in ['youtube', 'youtu']):
+        opts = base_opts(DOWNLOADS, get_ffmpeg_path())
 
-            opts = {
-                "outtmpl": f'{downloads}/%(title)s.%(ext)s',
-                "format": f"bv*[height<={height}]+ba[ext=m4a]/bv*+ba[ext=m4a]/bv*+ba",
-                'noplaylist': True,
-                'quiet': False,
-                'geo_bypass': True,
-                "retries": 3,
-                "fragment_retries": 10,
-                "http_headers": {
-                    "User-Agent": "Mozilla/5.0"
-                },
-                "merge_output_format": "mp4",
-                "ffmpeg_location": ffmpeg,
-                "postprocessors": [
-                    {
-                        "key": "FFmpegVideoConvertor",
-                        "preferedformat": "mp4"
-                    }
-                ],
-                "postprocessor_args": [
-                    "-c:v", "copy",
-                    "-c:a", "aac",
-                    "-b:a", "192k",
-                    "-movflags", "+faststart"
-                ],
-                "nopart": False,
-                "overwrites": False,
-                # "proxy": proxy,
-                # "progress_hooks": [progress_hook],
-            }
+        if site == "youtube":
+            opts["format"] = build_format(height)
 
-        elif any(x in url for x in ['pinterest', 'pin']):
-            opts = {
-                "outtmpl": f'{downloads}/%(title)s.%(ext)s',
-                "noplaylist": True,
-                "merge_output_format": "mp4",
-                "retries": 10,
-                "fragment_retries": 10,
-                "http_headers": {
-                    "User-Agent": "Mozilla/5.0"
-                },
-                "quiet": False,
-                "ffmpeg_location": ffmpeg,
-            }
+            proxy = get_proxy()
+            proxy = proxy if proxy_alive(proxy) else None
+            opts["proxy"] = proxy
 
-        if opts is None:
-            return {"success": False, "error": "E-7001 (Unsupported URL)"}
+            if deno:
+                opts["js_runtimes"] = {"deno": {"path": deno}}
+        else:  # Pinterest
+            opts["http_headers"] = {"User-Agent": "Mozilla/5.0"}
 
-        try:
-            with y.YoutubeDL(opts) as ydl:
-                ydl.download([url])
-        except y.DownloadError as e:
-            code, desc = get_error(str(e))
-            return {"success": False, "error": f"{code} ({desc})"}
+        with y.YoutubeDL(opts) as ydl:
+            info = ydl.extract_info(url, download=True)
 
-        return {"success": True}
+        title = (info or {}).get("title")
+        return {"success": True, "title": title}
+
+    except y.utils.DownloadError as e:
+        return fail(e)
     except Exception as e:
-        code, desc = get_error(str(e))
-        return {"success": False, "error": f"{code} ({desc})"}
+        return fail(e)
+    finally:
+        _busy.release()
 
 
 @eel.expose
 def open_tab(url):
-    webbrowser.open_new_tab(url)
+    if is_url(url):
+        webbrowser.open_new_tab(url)
 
 
-eel.start(
-    "index.html",
-    disable_cache=True,
-    size=(1000, 500)
-)
+@eel.expose
+def open_downloads():
+    if sys.platform == "win32":
+        os.startfile(DOWNLOADS)
+
+
+def main():
+    kwargs = dict(disable_cache=True, size=(1000, 500))
+    try:
+        eel.start("index.html", **kwargs)
+    except EnvironmentError:
+        eel.start("index.html", mode="edge", **kwargs)
+
+
+if __name__ == "__main__":
+    main()
