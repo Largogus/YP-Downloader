@@ -90,7 +90,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         console.log(url, quality);
 
-        eel.prepare_download(url, quality)(function(res) {
+        eel.validate_download(url, quality)(function(res) {
 
             error_url(res.success);
 
