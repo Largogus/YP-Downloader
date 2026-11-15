@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # **YP Downloader**
 
 <p align="center">
@@ -66,3 +67,7 @@
 
 💸 <a href="https://boosty.to/largen/single-payment/donation/804302/target?share=target_link">Если вы хотите поддержать проект монеткой</a>
 
+=======
+# Это тестовая страница YP Downloader
+## На ней ведётся разработка обновлений
+>>>>>>> origin/develop
